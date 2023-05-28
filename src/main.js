@@ -26,23 +26,25 @@ bot.command('start', async (ctx) => {
 bot.on(message('voice'), async (ctx) => {
     ctx.session ??= INITIAL_SESSION
     try {
-        await ctx.reply(code('accepted, processing request... 愛している'))
+        await ctx.reply(code('accepted, processing request...'))
         const link = await ctx.telegram.getFileLink(ctx.message.voice.file_id)
         const userId = String(ctx.message.from.id)
         const oggPath = await ogg.create(link.href, userId)
         const mp3Path = await ogg.toMp3(oggPath, userId)
 
         const text = await openai.transcription(mp3Path)
-        await ctx.reply(`response: ${text}`)
+        await ctx.reply(code(`response: ${text}`))
 
-        ctx.session.messages.push({ role: openai.roles.USER, content: text});
-
-        const response = await openai.chat(messages);
+        ctx.session.messages.push({ 
+            role: openai.roles.USER,
+            content: text})
+            
+        const response = await openai.chat(ctx.session.messages);
 
         ctx.session.messages.push({
             role: openai.roles.ASSISTANT,
-            content: response.content
-        });
+            content: response.content,
+        })
 
         await ctx.reply(response.content)
     } catch (e) {
@@ -55,22 +57,28 @@ bot.on(message('voice'), async (ctx) => {
 bot.on(message('text'), async (ctx) => {
     ctx.session ??= INITIAL_SESSION;
     try {
-        await ctx.reply(code('accepted, processing request... 愛している'))
-        ctx.session.messages.push({ role: openai.roles.USER, content: ctx.message.text });
-        const response = await openai.chat(messages);
+        await ctx.reply(code('accepted, processing request...'))
+
+        ctx.session.messages.push({
+            role: openai.roles.USER,
+            content: ctx.message.text })
+
+        const response = await openai.chat(ctx.session.messages)
+
         ctx.session.messages.push({
             role: openai.roles.ASSISTANT,
             content: response.content
-        });
+        })
+
         await ctx.reply(response.content)
     } catch (e) {
         console.log(`error while text message | `, e.message);
     }
-});
+})
 
 
-bot.launch();
+bot.launch()
 
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
